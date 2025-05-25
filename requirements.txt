@@ -1,0 +1,23 @@
+# Core Libraries
+nltk==3.8.1
+torch>=2.0.0
+numpy>=1.24.0
+
+# Sentence Transformers for SBERT
+sentence-transformers==2.2.2
+
+# FAISS for similarity search
+faiss-cpu==1.7.4
+
+# PDF reading
+PyPDF2==3.0.1
+
+# Hugging Face Transformers for fallback model
+transformers==4.40.1
+tokenizers>=0.13.3
+
+# Google Generative AI
+google-generativeai==0.3.2
+
+# Flask (for backend, if needed)
+flask==3.0.2

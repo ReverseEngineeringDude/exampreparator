@@ -1,0 +1,57 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Logs and local output
+*.log
+*.out
+*.tmp
+
+# VSCode / IDE configs
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Environment files
+.env
+.venv/
+venv/
+ENV/
+env.bak/
+env/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Backend output folders and files
+backend/extracted_text/
+backend/grouped_questions.txt
+backend/generated_answers.txt
+
+# Uploads (PDFs and inputs)
+backend/uploads/
+
+# Model / tokenizer caches
+.cache/
+*.ckpt
+*.pt
+*.pth
+
+# FAISS index files
+*.faiss
+*.index
+
+# Python packaging
+build/
+dist/
+*.egg-info/
+
+# Secrets / API keys
+apikey.txt

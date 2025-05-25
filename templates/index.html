@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Exam Preparator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Exam Preparator</h1>
+        <p class="subtitle">Upload Notes and Question Papers to Analyze</p>
+
+        <form id="uploadForm" enctype="multipart/form-data">
+            <div class="upload-box">
+                <label>Upload Notes PDFs</label>
+                <input type="file" name="notes[]" multiple required>
+            </div>
+
+            <div class="upload-box">
+                <label>Upload Question Papers PDFs</label>
+                <input type="file" name="questions[]" multiple required>
+            </div>
+
+            <button type="submit" class="upload-btn">Upload Files</button>
+        </form>
+
+        <div id="progress" class="progress-bar"></div>
+
+        <h2>Generated Answers</h2>
+        <pre id="answers" class="output-box">No answers yet.</pre>
+
+        <button class="download-btn" onclick="downloadPDF()">Download as PDF</button>
+    </div>
+
+    <script src="{{ url_for('static', filename='scripts.js') }}"></script>
+</body>
+</html>
