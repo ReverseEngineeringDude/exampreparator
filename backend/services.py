@@ -182,8 +182,8 @@ def safe_generate(prompt_template, content):
     # If content is empty/very short, handle gracefully?
     
     # Simple retry logic
-    MODEL_NAME = "models/gemini-2.5-flash"
-    MAX_WORDS = 7000
+    MODEL_NAME = MODEL_NAME_GEMINI
+    MAX_WORDS = 50000
     MIN_WORDS = 300
     
     word_limit = MAX_WORDS
@@ -198,8 +198,13 @@ def safe_generate(prompt_template, content):
                 if response and hasattr(response, "text"):
                     return response.text.strip()
             except Exception as e:
-                print(f"⚠️ Attempt {attempt+1} failed: {e}")
-                time.sleep(2)
+                error_str = str(e).lower()
+                if "429" in error_str or "quota" in error_str:
+                    print(f"⚠️ Quota exceeded. Waiting 60 seconds before retrying... (Attempt {attempt+1})")
+                    time.sleep(60)
+                else:
+                    print(f"⚠️ Attempt {attempt+1} failed: {e}")
+                    time.sleep(2)
         
         word_limit //= 2
         print(f"⚠️ Reducing word limit to {word_limit}...")
@@ -363,3 +368,127 @@ def process_data(notes_folder, questions_folder, extracted_folder):
         f.write(f"Questions:\n{questions_summary}\n\nAnswers:\n{answers}")
         
     return answers
+
+# ==========================================
+# STUDY MATERIAL GENERATION
+# ==========================================
+def generate_study_material(notes_folder):
+    """Generates grouped topics and key points from notes for the Study Mode."""
+    init_models()
+    
+    notes_texts = extract_text_from_pdfs(notes_folder)
+    combined_notes = "\n\n".join(notes_texts)
+    
+    if not combined_notes.strip():
+        return []
+
+    # Prompt to structure the data as JSON-like
+    prompt = '''
+    Analyze the following academic notes and extract the main topics.
+    For each topic, provide a brief summary (under 50 words) and 3-5 key bullet points.
+    
+    Output the result EXCLUSIVELY in this specific JSON format (no markdown, no extra text):
+    [
+        {{
+            "topic": "Topic Name",
+            "summary": "Brief summary of the topic.",
+            "points": ["Key point 1", "Key point 2", "Key point 3"]
+        }},
+        ...
+    ]
+    
+    NOTES CONTENT:
+    {}
+    '''
+    
+    try:
+        json_output = safe_generate(prompt, combined_notes)
+        
+        # Robust JSON extraction
+        start_index = json_output.find('[')
+        end_index = json_output.rfind(']')
+        
+        if start_index != -1 and end_index != -1 and end_index > start_index:
+            cleaned_json = json_output[start_index:end_index+1]
+            import json
+            study_data = json.loads(cleaned_json)
+            return study_data
+        else:
+            print(f"❌ Could not find JSON array in output: {json_output[:100]}...")
+            return []
+
+    except Exception as e:
+        print(f"❌ Error generating study material: {e}")
+        return []
+
+def generate_study_from_questions(questions_folder, notes_folder=None):
+    """Generates grouped topics and key points from Question Papers (and optional Notes) for the Study Mode."""
+    init_models()
+    
+    # Extract QP text
+    qp_texts = extract_text_from_pdfs(questions_folder)
+    combined_qp = "\n\n".join(qp_texts)
+    
+    if not combined_qp.strip() or combined_qp == "No notes uploaded.":
+        return []
+
+    # Extract Notes text (optional)
+    notes_context = "No notes provided. Use general knowledge."
+    if notes_folder:
+        notes_texts = extract_text_from_pdfs(notes_folder)
+        extracted_notes = "\n\n".join(notes_texts)
+        if extracted_notes.strip() and extracted_notes != "No notes uploaded.":
+            notes_context = extracted_notes
+
+    # Prompt
+    # Prepare Content
+    content_payload = f"""
+    QUESTION PAPER CONTENT:
+    {combined_qp}
+    
+    REFERENCE NOTES CONTENT:
+    {notes_context}
+    """
+
+    # Prepare Template with DOUBLED braces for literal JSON
+    prompt_template = '''
+    Analyze the following Question Paper text to identify the main topics and key questions asked.
+    For each identified topic, provide a brief summary (simple notes) and 3-5 key bullet points.
+    
+    Use the provided 'Reference Notes' content as the primary source of information if available. 
+    If Reference Notes are empty or irrelevant, use your general knowledge to explain the topics found in the Question Paper.
+    
+    Output the result EXCLUSIVELY in this specific JSON format:
+    [
+        {{
+            "topic": "Topic Name (from Question Paper)",
+            "summary": "Simple explanation/notes about this topic.",
+            "points": ["Key concept 1", "Key concept 2", "Key concept 3"]
+        }},
+        ...
+    ]
+    
+    {} 
+    '''
+    
+    try:
+        json_output = safe_generate(prompt_template, content_payload)
+        
+        # Robust JSON extraction
+        start_index = json_output.find('[')
+        end_index = json_output.rfind(']')
+        
+        if start_index != -1 and end_index != -1 and end_index > start_index:
+            cleaned_json = json_output[start_index:end_index+1]
+            import json
+            study_data = json.loads(cleaned_json)
+            return study_data
+        else:
+             # Retry fallback or log
+            print(f"❌ Could not find JSON array in study output.")
+            return []
+
+    except Exception as e:
+        print(f"❌ Error generating study from questions: {e}")
+        return []
+

@@ -20,7 +20,16 @@ GENERATED_PDF = os.path.join(BASE_DIR, 'generated_answers.pdf')
 # Ensure directories exist
 os.makedirs(NOTES_FOLDER, exist_ok=True)
 os.makedirs(QUESTIONS_FOLDER, exist_ok=True)
+os.makedirs(QUESTIONS_FOLDER, exist_ok=True)
 os.makedirs(EXTRACTED_FOLDER, exist_ok=True)
+
+# Study Mode Folders
+STUDY_UPLOAD_FOLDER = os.path.join(UPLOAD_FOLDER, 'study')
+STUDY_NOTES_FOLDER = os.path.join(STUDY_UPLOAD_FOLDER, 'notes')
+STUDY_QUESTIONS_FOLDER = os.path.join(STUDY_UPLOAD_FOLDER, 'questions')
+
+os.makedirs(STUDY_NOTES_FOLDER, exist_ok=True)
+os.makedirs(STUDY_QUESTIONS_FOLDER, exist_ok=True)
 
 # Initialize models once at startup
 services.init_models()
@@ -56,6 +65,9 @@ def upload_files():
 
         # Core logic execution via services
         services.process_data(NOTES_FOLDER, QUESTIONS_FOLDER, EXTRACTED_FOLDER)
+        
+        # Note: Analysis Mode does NOT auto-generate Study Material anymore.
+        # User must use Study Mode for that.
 
         return jsonify({'message': 'Files processed successfully'})
     except Exception as e:
@@ -87,6 +99,50 @@ def download_pdf():
     except Exception as e:
         app.logger.error(f"Error generating PDF: {e}")
         return f"❌ Error generating PDF: {e}", 500
+
+@app.route('/get_study_material', methods=['GET'])
+def get_study_material():
+    try:
+        study_file = os.path.join(BASE_DIR, "study_material.json")
+        if os.path.exists(study_file):
+            return send_file(study_file)
+        return jsonify([])
+    except Exception as e:
+        return f"❌ Error loading study material: {e}", 500
+
+@app.route('/study_upload', methods=['POST'])
+def study_upload():
+    try:
+        # Cleanup
+        shutil.rmtree(STUDY_UPLOAD_FOLDER, ignore_errors=True)
+        os.makedirs(STUDY_NOTES_FOLDER, exist_ok=True)
+        os.makedirs(STUDY_QUESTIONS_FOLDER, exist_ok=True)
+        
+        notes_files = request.files.getlist('study_notes[]')
+        questions_files = request.files.getlist('study_questions[]')
+        
+        # Save Question Papers
+        for file in questions_files:
+            if file.filename:
+                file.save(os.path.join(STUDY_QUESTIONS_FOLDER, file.filename))
+                
+        # Save Notes (Optional)
+        for file in notes_files:
+            if file.filename:
+                file.save(os.path.join(STUDY_NOTES_FOLDER, file.filename))
+        
+        # Generate
+        study_data = services.generate_study_from_questions(STUDY_QUESTIONS_FOLDER, STUDY_NOTES_FOLDER)
+        
+        # Save JSON state
+        import json
+        with open(os.path.join(BASE_DIR, "study_material.json"), "w", encoding="utf-8") as f:
+            json.dump(study_data, f)
+            
+        return jsonify({'message': 'Study material generated successfully'})
+    except Exception as e:
+        app.logger.error(f"Error in study upload: {e}")
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

@@ -1,37 +1,159 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Exam Preparator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
+
 <body>
-    <div class="container">
-        <h1>Exam Preparator</h1>
-        <p class="subtitle">Upload Notes and Question Papers to Analyze</p>
+    <div class="background-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
 
-        <form id="uploadForm" enctype="multipart/form-data">
-            <div class="upload-box">
-                <label>Upload Notes PDFs</label>
-                <input type="file" name="notes[]" multiple required>
+    <div class="glass-container">
+        <header class="header-row">
+            <div>
+                <h1>Exam Preparator</h1>
+                <p class="subtitle">AI-Powered Analysis for Notes & Question Papers</p>
             </div>
 
-            <div class="upload-box">
-                <label>Upload Question Papers PDFs</label>
-                <input type="file" name="questions[]" multiple required>
+            <div class="toggle-container">
+                <input type="checkbox" id="mode-toggle" class="toggle-checkbox">
+                <label for="mode-toggle" class="toggle-label">
+                    <span class="toggle-inner"></span>
+                    <span class="toggle-switch"></span>
+                </label>
+                <span class="toggle-text">Study Mode</span>
+            </div>
+        </header>
+
+        <!-- Main Analysis Mode -->
+        <div id="analysis-view">
+            <form id="uploadForm" enctype="multipart/form-data">
+                <div class="upload-grid">
+                    <div class="upload-card">
+                        <div class="icon-wrapper">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                                <line x1="12" y1="18" x2="12" y2="12"></line>
+                                <line x1="9" y1="15" x2="15" y2="15"></line>
+                            </svg>
+                        </div>
+                        <label for="notes-input" class="file-label">Upload Notes PDFs</label>
+                        <input type="file" id="notes-input" name="notes[]" multiple required>
+                        <div class="file-list" id="notes-file-list">No files selected</div>
+                    </div>
+
+                    <div class="upload-card">
+                        <div class="icon-wrapper">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                                <circle cx="12" cy="13" r="2"></circle>
+                                <path d="M12 15v2"></path>
+                            </svg>
+                        </div>
+                        <label for="questions-input" class="file-label">Question Papers</label>
+                        <input type="file" id="questions-input" name="questions[]" multiple required>
+                        <div class="file-list" id="questions-file-list">No files selected</div>
+                    </div>
+                </div>
+
+                <button type="submit" class="cta-btn">
+                    <span>Analyze Documents</span>
+                    <div class="btn-glow"></div>
+                </button>
+            </form>
+
+            <div id="progress" class="progress-container">
+                <div class="progress-bar"></div>
+                <p class="progress-text">Analyzing your documents...</p>
             </div>
 
-            <button type="submit" class="upload-btn">Upload Files</button>
-        </form>
+            <div class="results-section">
+                <h2>Generated Insights</h2>
+                <div id="answers" class="output-console">
+                    <span class="placeholder-text">Analysis results will appear here...</span>
+                </div>
 
-        <div id="progress" class="progress-bar"></div>
+                <button class="download-btn hidden" id="downloadBtn" onclick="downloadPDF()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Download Report
+                </button>
+            </div>
+        </div>
 
-        <h2>Generated Answers</h2>
-        <pre id="answers" class="output-box">No answers yet.</pre>
+        <!-- Study Mode View -->
+        <div id="study-view" style="display: none;">
 
-        <button class="download-btn" onclick="downloadPDF()">Download as PDF</button>
+            <form id="studyUploadForm" enctype="multipart/form-data" class="study-form">
+                <div class="upload-grid" style="grid-template-columns: 1fr; max-width: 500px; margin: 0 auto;">
+                    <div class="upload-card">
+                        <div class="icon-wrapper">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                                <circle cx="12" cy="13" r="2"></circle>
+                                <path d="M12 15v2"></path>
+                            </svg>
+                        </div>
+                        <label for="study-questions-input" class="file-label">Study Question Paper</label>
+                        <input type="file" id="study-questions-input" name="study_questions[]" multiple required>
+                        <div class="file-list" id="study-questions-file-list">No files selected</div>
+                    </div>
+                </div>
+                <button type="submit" class="cta-btn study-btn">
+                    <span>Generate Study Material</span>
+                    <div class="btn-glow"></div>
+                </button>
+            </form>
+
+            <div id="study-progress" class="progress-container">
+                <div class="progress-bar"></div>
+                <p class="progress-text">Analysing topics and finding videos...</p>
+            </div>
+
+            <div class="study-grid" id="study-results" style="display:none;">
+                <div class="study-column notes-column">
+                    <h3>📚 Key Notes</h3>
+                    <div id="study-notes-list">
+                        <!-- Dynamic Content -->
+                        <div class="loading-placeholder">Generate analysis first to see notes...</div>
+                    </div>
+                </div>
+                <div class="study-column video-column">
+                    <h3>▶️ Recommended Videos</h3>
+                    <div id="study-videos-list">
+                        <!-- Dynamic Content -->
+                        <div class="loading-placeholder">Select a topic to find videos...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <script src="{{ url_for('static', filename='scripts.js') }}"></script>
 </body>
+
 </html>
