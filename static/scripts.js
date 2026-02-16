@@ -51,7 +51,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 const answerRes = await fetch('/get_answers');
                 const answerText = await answerRes.text();
 
-                answers.textContent = answerText;
+                // Parse Markdown
+                answers.innerHTML = marked.parse(answerText);
+
+                // Render Mermaid Diagrams
+                setTimeout(() => {
+                    mermaid.run({
+                        nodes: document.querySelectorAll('.language-mermaid, .mermaid')
+                    });
+                }, 100);
 
                 // Show Download Button
                 downloadBtn.classList.remove('hidden');
@@ -147,9 +155,17 @@ async function loadStudyMaterial() {
             // Notes Card
             const card = document.createElement('div');
             card.className = 'topic-card';
+
+            // Diagram (if available)
+            let diagramHtml = '';
+            if (item.diagram) {
+                diagramHtml = `<div class="mermaid">${item.diagram}</div>`;
+            }
+
             card.innerHTML = `
                     <div class="topic-title">${item.topic}</div>
                     <div class="topic-summary">${item.summary}</div>
+                    ${diagramHtml}
                     <ul class="topic-points">
                         ${item.points.map(p => `<li>${p}</li>`).join('')}
                     </ul>
@@ -169,6 +185,13 @@ async function loadStudyMaterial() {
                 `;
             videosList.appendChild(videoCard);
         });
+
+        // Trigger Mermaid Render
+        setTimeout(() => {
+            mermaid.run({
+                nodes: document.querySelectorAll('.mermaid')
+            });
+        }, 100);
 
     } catch (err) {
         console.error(err);

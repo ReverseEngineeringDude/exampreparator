@@ -18,7 +18,7 @@ from reportlab.lib.enums import TA_JUSTIFY, TA_LEFT
 # CONSTANTS & CONFIG
 # ==========================================
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-API_KEY_PATH = os.path.join(BASE_DIR, "apikey.txt")
+API_KEY_PATH = os.path.join(os.path.dirname(BASE_DIR), "apikey.txt")
 MODEL_NAME_SBERT = "sentence-transformers/all-MiniLM-L6-v2"
 MODEL_NAME_GEMINI = "models/gemini-2.5-flash"
 
@@ -272,6 +272,11 @@ def generate_answers(grouped_questions_text, notes_folder):
             answer_template = '''
             Answer the question below based on these retrieved notes.
             
+            If the question asks for a diagram, flowchart, or figure:
+            - Generate a Mermaid.js diagram code block.
+            - Wrap the code block in ```mermaid and ``` key.
+            - Also provide a text description of the diagram.
+            
             NOTES:
             {}
             
@@ -463,10 +468,14 @@ def generate_study_from_questions(questions_folder, notes_folder=None):
         {{
             "topic": "Topic Name (from Question Paper)",
             "summary": "Simple explanation/notes about this topic.",
-            "points": ["Key concept 1", "Key concept 2", "Key concept 3"]
+            "points": ["Key concept 1", "Key concept 2", "Key concept 3"],
+            "diagram": "Mermaid.js code for a flowchart/diagram if applicable, else null"
         }},
         ...
     ]
+    
+    If a topic can be better explained with a flowchart or diagram, provide the Mermaid.js code in the "diagram" field.
+    Example diagram code: "graph TD; A-->B; B-->C;"
     
     {} 
     '''

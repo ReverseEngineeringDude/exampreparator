@@ -493,3 +493,20 @@ h2 {
 .download-btn.hidden {
     display: none;
 }
+
+/* Mermaid Diagram Styling */
+.mermaid, .language-mermaid {
+    display: flex;
+    justify-content: center;
+    background: #fff;
+    padding: 20px;
+    border-radius: 12px;
+    margin: 20px 0;
+    width: 100%;
+    overflow-x: auto;
+}
+
+.mermaid svg {
+    max-width: 100%;
+    height: auto;
+}
