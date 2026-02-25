@@ -36,7 +36,15 @@ services.init_models()
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('landingpage.html')
+
+@app.route('/upload_page')
+def upload_page():
+    return render_template('uplaod.html')
+
+@app.route('/answers_page')
+def answers_page():
+    return render_template('answers.html')
 
 @app.route('/upload', methods=['POST'])
 def upload_files():

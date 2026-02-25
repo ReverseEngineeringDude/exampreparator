@@ -228,7 +228,15 @@ def generate_answers(grouped_questions_text, notes_folder):
     # 2. Extract meaningful questions from the raw grouped text
     extract_template = '''
     Extract all relevant questions from the following text. The questions should be meaningful and related to the subject.
+    Identify the marks/weightage for each question if available.
     Ignore metadata like 'Group 1' or filenames.
+    
+    Output format MUST strictly be (one question per line):
+    [Mark] Question Text
+    Example:
+    [5] What is the difference between compiler and interpreter?
+    [10] Explain the architecture of a DBMS with a diagram.
+    If the mark is unknown, use [Unknown].
     
     TEXT:
     {}
@@ -246,10 +254,22 @@ def generate_answers(grouped_questions_text, notes_folder):
     index.add(note_embeddings)
 
     # 4. Generate answers
+    import re
     answers_output = ""
     
-    for i, question in enumerate(extracted_questions.split("\n")):
-        question = question.strip()
+    for i, line in enumerate(extracted_questions.split("\n")):
+        line = line.strip()
+        if not line: continue
+        
+        # Parse the mark out of the AI response: e.g. "[5] What is..."
+        mark_match = re.match(r'^\[(.*?)\]\s*(.*)', line)
+        if mark_match:
+            mark_val = mark_match.group(1).strip()
+            question = mark_match.group(2).strip()
+        else:
+            mark_val = "Unknown"
+            question = line
+
         if not question: continue
         
         # Retrieve context
@@ -284,7 +304,7 @@ def generate_answers(grouped_questions_text, notes_folder):
             ''' + question
             answer = safe_generate("{}", context_text)
             
-        answers_output += f"## Question {i+1}: {question}\n\n{answer}\n\n---\n\n"
+        answers_output += f"## Question {i+1} [{mark_val} Marks]: {question}\n\n{answer}\n\n---\n\n"
         
     return extracted_questions, answers_output
 

@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload - Exam Preparator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0A0A0B;
+            color: #FAFAFA;
+        }
+
+        /* Gemini Gradient Text */
+        .gemini-gradient {
+            background: linear-gradient(74deg, #4285f4 0, #9b72cb 9%, #d96570 20%, #d96570 24%, #9b72cb 35%, #4285f4 44%, #9b72cb 50%, #d96570 56%, #131314 75%, #131314 100%);
+            background-size: 400% 100%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: textShine 6s ease-in-out infinite alternate;
+        }
+
+        @keyframes textShine {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            100% {
+                background-position: 100% 50%;
+            }
+        }
+
+        .upload-zone {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .upload-zone:hover {
+            border-color: rgba(66, 133, 244, 0.5);
+            background: rgba(255, 255, 255, 0.05);
+            transform: translateY(-2px);
+        }
+
+        /* Glass Panel */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+    </style>
+</head>
+
+<body
+    class="min-h-screen antialiased flex flex-col relative overflow-x-hidden selection:bg-blue-500/30 selection:text-blue-200">
+
+    <!-- Background Animated Blobs -->
+    <div class="fixed inset-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
+        <div
+            class="absolute top-[-10%] left-[-10%] w-96 h-96 bg-blue-600/20 rounded-full mix-blend-screen filter blur-[100px] animate-pulse">
+        </div>
+        <div class="absolute bottom-[-20%] right-[-10%] w-96 h-96 bg-purple-600/20 rounded-full mix-blend-screen filter blur-[120px] animate-pulse"
+            style="animation-delay: 2s;"></div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="max-w-3xl mx-auto w-full px-4 sm:px-6 pt-10 pb-20 mt-10">
+
+        <a href="/"
+            class="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors mb-10 text-sm font-medium">
+            <i class="ph-bold ph-arrow-left"></i> Back to Home
+        </a>
+
+        <div class="text-center mb-12">
+            <h1 id="page-title" class="text-4xl md:text-5xl font-bold tracking-tight mb-4 hidden">Question Paper Mode
+            </h1>
+            <h1 id="page-title-display" class="text-4xl md:text-5xl font-bold tracking-tight mb-4">Upload <span
+                    class="gemini-gradient">Documents</span></h1>
+            <p id="page-subtitle" class="text-lg text-gray-400">Please select your files to begin processing.</p>
+        </div>
+
+        <!-- Form Container -->
+        <div class="glass-panel rounded-3xl p-6 sm:p-10 shadow-2xl relative">
+            <div class="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent rounded-3xl pointer-events-none">
+            </div>
+
+            <form id="uploadForm" enctype="multipart/form-data" class="relative z-10">
+                <div class="grid md:grid-cols-2 gap-6 transition-all duration-300" id="upload-grid">
+
+                    <!-- Question Paper Upload Zone -->
+                    <div class="upload-zone relative border-2 border-dashed border-white/10 rounded-2xl p-8 text-center flex flex-col items-center justify-center min-h-[240px]"
+                        id="questions-zone">
+
+                        <!-- Initial state -->
+                        <div id="questions-initial"
+                            class="w-full flex-col items-center justify-center cursor-pointer group relative flex">
+                            <input type="file" id="questions-input" name="questions[]" multiple required
+                                class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20">
+                            <div
+                                class="w-16 h-16 mx-auto rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                                <i class="ph-fill ph-file-pdf text-3xl text-blue-400"></i>
+                            </div>
+                            <h3 class="text-lg font-semibold text-white mb-1">Question Papers</h3>
+                            <p id="q-hint" class="text-sm text-gray-400 mb-4 px-4">(Upload past year question papers)
+                            </p>
+                            <div id="questions-file-list"
+                                class="text-xs font-medium text-blue-300 bg-blue-500/10 px-3 py-1.5 rounded-lg border border-blue-500/20 truncate max-w-[200px] mx-auto">
+                                No files selected
+                            </div>
+                        </div>
+
+                        <!-- Selected State -->
+                        <div id="questions-selected"
+                            class="hidden w-full relative z-30 flex-col items-center justify-center">
+                            <div
+                                class="w-12 h-12 mx-auto rounded-2xl bg-green-500/10 border border-green-500/20 flex items-center justify-center mb-4">
+                                <i class="ph-bold ph-check text-2xl text-green-400"></i>
+                            </div>
+                            <div
+                                class="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl p-3 mb-3 w-full max-w-[260px] mx-auto relative z-30 pointer-events-auto">
+                                <div class="flex items-center gap-3 overflow-hidden text-left">
+                                    <i class="ph-fill ph-file-pdf text-blue-400 text-xl shrink-0"></i>
+                                    <span id="q-file-name"
+                                        class="text-sm font-medium text-white truncate max-w-[150px] sm:max-w-[180px]"></span>
+                                </div>
+                                <button type="button" id="q-delete-btn"
+                                    class="shrink-0 p-1.5 hover:bg-red-500/20 text-red-400 rounded-lg transition-colors cursor-pointer"
+                                    title="Remove file">
+                                    <i class="ph-bold ph-trash text-lg"></i>
+                                </button>
+                            </div>
+                            <!-- Progress Bar -->
+                            <div class="h-1.5 w-full max-w-[260px] mx-auto bg-white/5 rounded-full overflow-hidden">
+                                <div id="q-progress-bar"
+                                    class="h-full bg-blue-500 w-0 transition-all duration-[600ms] ease-out"></div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Module/Notes Upload Zone -->
+                    <div class="upload-zone relative border-2 border-dashed border-white/10 rounded-2xl p-8 text-center flex flex-col items-center justify-center min-h-[240px]"
+                        id="notes-card">
+
+                        <!-- Initial state -->
+                        <div id="notes-initial"
+                            class="w-full flex-col items-center justify-center cursor-pointer group relative flex">
+                            <input type="file" id="notes-input" name="notes[]" multiple
+                                class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20">
+                            <div
+                                class="w-16 h-16 mx-auto rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                                <i class="ph-fill ph-books text-3xl text-purple-400"></i>
+                            </div>
+                            <h3 class="text-lg font-semibold text-white mb-1">Module / Notes</h3>
+                            <p id="n-hint" class="text-sm text-gray-400 mb-4 px-4">(Upload syllabus or class notes)</p>
+                            <div id="notes-file-list"
+                                class="text-xs font-medium text-purple-300 bg-purple-500/10 px-3 py-1.5 rounded-lg border border-purple-500/20 truncate max-w-[200px] mx-auto">
+                                No files selected
+                            </div>
+                        </div>
+
+                        <!-- Selected State -->
+                        <div id="notes-selected"
+                            class="hidden w-full relative z-30 flex-col items-center justify-center">
+                            <div
+                                class="w-12 h-12 mx-auto rounded-2xl bg-green-500/10 border border-green-500/20 flex items-center justify-center mb-4">
+                                <i class="ph-bold ph-check text-2xl text-green-400"></i>
+                            </div>
+                            <div
+                                class="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl p-3 mb-3 w-full max-w-[260px] mx-auto relative z-30 pointer-events-auto">
+                                <div class="flex items-center gap-3 overflow-hidden text-left">
+                                    <i class="ph-fill ph-books text-purple-400 text-xl shrink-0"></i>
+                                    <span id="n-file-name"
+                                        class="text-sm font-medium text-white truncate max-w-[150px] sm:max-w-[180px]"></span>
+                                </div>
+                                <button type="button" id="n-delete-btn"
+                                    class="shrink-0 p-1.5 hover:bg-red-500/20 text-red-400 rounded-lg transition-colors cursor-pointer"
+                                    title="Remove file">
+                                    <i class="ph-bold ph-trash text-lg"></i>
+                                </button>
+                            </div>
+                            <!-- Progress Bar -->
+                            <div class="h-1.5 w-full max-w-[260px] mx-auto bg-white/5 rounded-full overflow-hidden">
+                                <div id="n-progress-bar"
+                                    class="h-full bg-purple-500 w-0 transition-all duration-[600ms] ease-out"></div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <!-- Submit Area -->
+                <div class="mt-10 flex flex-col items-center relative z-40">
+                    <button type="submit" id="submit-btn"
+                        class="relative group px-10 py-4 w-full sm:w-auto min-w-[240px] rounded-full bg-white text-black font-bold text-lg hover:scale-105 transition-transform duration-300 shadow-[0_0_30px_rgba(255,255,255,0.2)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-3">
+                        <i id="btn-icon" class="ph-bold ph-magic-wand text-xl"></i>
+                        <span id="btn-text">Generate Results</span>
+                        <div
+                            class="absolute inset-0 rounded-full ring-2 ring-white opacity-0 group-hover:opacity-20 transition-opacity">
+                        </div>
+                    </button>
+
+                    <!-- Progress / Status -->
+                    <div id="progress" class="hidden mt-8 w-full max-w-md text-center">
+                        <div class="h-1.5 w-full bg-white/10 rounded-full overflow-hidden mb-3 relative">
+                            <div
+                                class="absolute inset-y-0 left-0 bg-gradient-to-r from-blue-500 to-purple-500 w-1/2 rounded-full animate-[progress_1.5s_ease-in-out_infinite]">
+                            </div>
+                        </div>
+                        <p id="progress-text" class="text-sm font-medium text-gray-300 animate-pulse">Processing your
+                            documents...</p>
+                    </div>
+
+                    <div id="error-msg"
+                        class="hidden mt-6 px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm font-medium text-center w-full max-w-md">
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Simple CSS animation for the progress bar -->
+    <style>
+        @keyframes progress {
+            0% {
+                transform: translateX(-100%);
+            }
+
+            100% {
+                transform: translateX(200%);
+            }
+        }
+    </style>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const mode = urlParams.get('mode') || 'qb';
+
+            const titleDisplay = document.getElementById('page-title-display');
+            const pageSubtitle = document.getElementById('page-subtitle');
+            const submitBtn = document.getElementById('submit-btn');
+            const btnText = document.getElementById('btn-text');
+            const btnIcon = document.getElementById('btn-icon');
+            const progressText = document.getElementById('progress-text');
+            const notesInput = document.getElementById('notes-input');
+            const uploadGrid = document.getElementById('upload-grid');
+            const notesCard = document.getElementById('notes-card');
+
+            // Setup UI based on mode
+            if (mode === 'study') {
+                titleDisplay.innerHTML = `Study <span class="gemini-gradient">Mode</span>`;
+                pageSubtitle.textContent = "Upload question papers to pinpoint high-yield topics.";
+                btnText.textContent = "Generate Study Path";
+                progressText.textContent = "Analyzing topics and finding videos...";
+
+                // Hide Notes upload completely
+                notesCard.style.display = 'none';
+                uploadGrid.classList.remove('md:grid-cols-2');
+                uploadGrid.classList.add('max-w-md', 'mx-auto');
+                notesInput.name = "study_notes[]";
+                notesInput.required = false;
+                document.getElementById('questions-input').name = "study_questions[]";
+            } else {
+                titleDisplay.innerHTML = `Question Paper <span class="gemini-gradient">Mode</span>`;
+                pageSubtitle.textContent = "Upload a question paper and module notes to generate perfect answers.";
+                btnText.textContent = "Generate Answers";
+                progressText.textContent = "Analyzing documents and writing answers...";
+
+                notesInput.required = true;
+                document.getElementById('n-hint').textContent = "(Required: Upload syllabus or class notes)";
+            }
+
+            // Handle File Input Changes
+            const setupFileInput = (type) => { // type is 'questions' or 'notes'
+                const input = document.getElementById(`${type}-input`);
+                const initialView = document.getElementById(`${type}-initial`);
+                const selectedView = document.getElementById(`${type}-selected`);
+                const fileNameDisplay = document.getElementById(`${type === 'questions' ? 'q' : 'n'}-file-name`);
+                const deleteBtn = document.getElementById(`${type === 'questions' ? 'q' : 'n'}-delete-btn`);
+                const progressBar = document.getElementById(`${type === 'questions' ? 'q' : 'n'}-progress-bar`);
+
+                input.addEventListener('change', () => {
+                    if (input.files.length > 0) {
+                        const count = input.files.length;
+                        const firstFile = input.files[0].name;
+                        fileNameDisplay.textContent = count > 1 ? `${count} files selected` : firstFile;
+
+                        // Switch Views
+                        initialView.classList.add('hidden');
+                        initialView.classList.remove('flex');
+                        selectedView.classList.remove('hidden');
+                        selectedView.classList.add('flex');
+
+                        // Animate progress bar
+                        progressBar.style.width = '0%';
+                        setTimeout(() => {
+                            progressBar.style.width = '100%';
+                        }, 50);
+                    }
+                });
+
+                deleteBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    // Reset input
+                    input.value = '';
+
+                    // Switch Views back
+                    selectedView.classList.add('hidden');
+                    selectedView.classList.remove('flex');
+                    initialView.classList.remove('hidden');
+                    initialView.classList.add('flex');
+
+                    progressBar.style.width = '0%';
+                });
+            };
+
+            setupFileInput('questions');
+            setupFileInput('notes');
+
+            // Form Submit Logic
+            const form = document.getElementById('uploadForm');
+            const progressContainer = document.getElementById('progress');
+            const errorMsg = document.getElementById('error-msg');
+
+            form.addEventListener('submit', async function (e) {
+                e.preventDefault();
+
+                const formData = new FormData(form);
+
+                progressContainer.classList.remove('hidden');
+                errorMsg.classList.add('hidden');
+                submitBtn.disabled = true;
+                btnText.textContent = 'Processing...';
+                btnIcon.className = 'ph-bold ph-spinner-gap animate-spin text-xl';
+
+                const endpoint = mode === 'study' ? '/study_upload' : '/upload';
+
+                try {
+                    const response = await fetch(endpoint, {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok) {
+                        window.location.href = '/answers_page?mode=' + mode;
+                    } else {
+                        // Better error messages handling the proxy drop/broken pipe scenario
+                        let errTxt = result.error || 'Unknown error';
+                        if (errTxt.includes('Broken pipe') || errTxt.includes('Connection') || errTxt.includes('Quota')) {
+                            errTxt += " - Re-upload with a smaller PDF or wait a moment for the AI rate limit to recover.";
+                        }
+                        errorMsg.textContent = `Upload failed: ${errTxt}`;
+                        errorMsg.classList.remove('hidden');
+                        resetBtn();
+                    }
+                } catch (err) {
+                    errorMsg.textContent = `Error: ${err.message}. (Server connection lost or timeout)`;
+                    errorMsg.classList.remove('hidden');
+                    resetBtn();
+                }
+            });
+
+            function resetBtn() {
+                progressContainer.classList.add('hidden');
+                submitBtn.disabled = false;
+                btnText.textContent = mode === 'study' ? 'Generate Study Path' : 'Generate Answers';
+                btnIcon.className = 'ph-bold ph-magic-wand text-xl';
+            }
+        });
+    </script>
+</body>
+
+</html>
