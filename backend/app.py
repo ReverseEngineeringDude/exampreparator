@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify, render_template, send_file
 import os
 import shutil
+import json
 import services
 
 app = Flask(
@@ -14,7 +15,7 @@ UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
 NOTES_FOLDER = os.path.join(UPLOAD_FOLDER, 'notes')
 QUESTIONS_FOLDER = os.path.join(UPLOAD_FOLDER, 'questions')
 EXTRACTED_FOLDER = os.path.join(BASE_DIR, 'extracted_text')
-GENERATED_ANSWERS = os.path.join(BASE_DIR, 'generated_answers.txt')
+GENERATED_ANSWERS = os.path.join(BASE_DIR, 'generated_answers.json')
 GENERATED_PDF = os.path.join(BASE_DIR, 'generated_answers.pdf')
 
 # Ensure directories exist
@@ -58,8 +59,6 @@ def upload_files():
         os.makedirs(QUESTIONS_FOLDER, exist_ok=True)
         os.makedirs(EXTRACTED_FOLDER, exist_ok=True)
 
-        open(GENERATED_ANSWERS, 'w').close()
-
         notes_files = request.files.getlist('notes[]')
         questions_files = request.files.getlist('questions[]')
 
@@ -72,14 +71,16 @@ def upload_files():
                 file.save(os.path.join(QUESTIONS_FOLDER, file.filename))
 
         # Core logic execution via services
-        services.process_data(NOTES_FOLDER, QUESTIONS_FOLDER, EXTRACTED_FOLDER)
+        # generate_answers now returns (questions_data, final_output_dict)
+        extracted_q, final_json = services.process_data(NOTES_FOLDER, QUESTIONS_FOLDER, EXTRACTED_FOLDER)
         
-        # Note: Analysis Mode does NOT auto-generate Study Material anymore.
-        # User must use Study Mode for that.
+        with open(GENERATED_ANSWERS, 'w', encoding='utf-8') as f:
+            json.dump(final_json, f, indent=4)
 
         return jsonify({'message': 'Files processed successfully'})
     except Exception as e:
-        app.logger.error(f"Error processing files: {e}")
+        import traceback
+        app.logger.error(f"Error processing files: \n{traceback.format_exc()}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/get_answers', methods=['GET'])
@@ -87,10 +88,11 @@ def get_answers():
     try:
         if os.path.exists(GENERATED_ANSWERS):
             with open(GENERATED_ANSWERS, 'r', encoding='utf-8') as f:
-                return f.read()
-        return "No answers generated yet.", 404
+                data = json.load(f)
+                return jsonify(data)
+        return jsonify({"error": "No answers generated yet."}), 404
     except Exception as e:
-        return f"❌ Error loading answers: {e}", 500
+        return jsonify({"error": f"Error loading answers: {e}"}), 500
 
 @app.route('/download_pdf', methods=['GET'])
 def download_pdf():
@@ -118,6 +120,18 @@ def get_study_material():
     except Exception as e:
         return f"❌ Error loading study material: {e}", 500
 
+@app.route('/progress', methods=['GET'])
+def get_progress():
+    progress_file = os.path.join(BASE_DIR, "progress.json")
+    if os.path.exists(progress_file):
+        try:
+            with open(progress_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                return jsonify(data)
+        except Exception:
+            return jsonify({"percent": 0, "message": "Starting..."})
+    return jsonify({"percent": 0, "message": "Initializing..."})
+
 @app.route('/study_upload', methods=['POST'])
 def study_upload():
     try:
@@ -143,7 +157,6 @@ def study_upload():
         study_data = services.generate_study_from_questions(STUDY_QUESTIONS_FOLDER, STUDY_NOTES_FOLDER)
         
         # Save JSON state
-        import json
         with open(os.path.join(BASE_DIR, "study_material.json"), "w", encoding="utf-8") as f:
             json.dump(study_data, f)
             
