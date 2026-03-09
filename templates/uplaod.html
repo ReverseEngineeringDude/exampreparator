@@ -20,6 +20,7 @@
         .gemini-gradient {
             background: linear-gradient(74deg, #4285f4 0, #9b72cb 9%, #d96570 20%, #d96570 24%, #9b72cb 35%, #4285f4 44%, #9b72cb 50%, #d96570 56%, #131314 75%, #131314 100%);
             background-size: 400% 100%;
+            background-clip: text;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             animation: textShine 6s ease-in-out infinite alternate;
@@ -207,8 +208,8 @@
                     <!-- Progress / Status -->
                     <div id="progress" class="hidden mt-8 w-full max-w-md text-center">
                         <div class="h-1.5 w-full bg-white/10 rounded-full overflow-hidden mb-3 relative">
-                            <div
-                                class="absolute inset-y-0 left-0 bg-gradient-to-r from-blue-500 to-purple-500 w-1/2 rounded-full animate-[progress_1.5s_ease-in-out_infinite]">
+                            <div id="upload-progress-fill"
+                                class="absolute inset-y-0 left-0 bg-gradient-to-r from-blue-500 to-purple-500 w-0 transition-all duration-500 rounded-full">
                             </div>
                         </div>
                         <p id="progress-text" class="text-sm font-medium text-gray-300 animate-pulse">Processing your
@@ -339,8 +340,21 @@
                 submitBtn.disabled = true;
                 btnText.textContent = 'Processing...';
                 btnIcon.className = 'ph-bold ph-spinner-gap animate-spin text-xl';
+                document.getElementById('upload-progress-fill').style.width = '0%';
 
                 const endpoint = mode === 'study' ? '/study_upload' : '/upload';
+
+                // Fetch progress routinely
+                let pollInterval = setInterval(async () => {
+                    try {
+                        const pRes = await fetch('/progress');
+                        if (pRes.ok) {
+                            const pData = await pRes.json();
+                            document.getElementById('upload-progress-fill').style.width = pData.percent + '%';
+                            progressText.textContent = pData.message + ' (' + pData.percent + '%)';
+                        }
+                    } catch (e) { }
+                }, 1000);
 
                 try {
                     const response = await fetch(endpoint, {
@@ -348,14 +362,21 @@
                         body: formData
                     });
 
+                    clearInterval(pollInterval);
                     const result = await response.json();
 
                     if (response.ok) {
-                        window.location.href = '/answers_page?mode=' + mode;
+                        document.getElementById('upload-progress-fill').style.width = '100%';
+                        progressText.textContent = 'Complete! Redirecting...';
+                        setTimeout(() => {
+                            window.location.href = '/answers_page?mode=' + mode;
+                        }, 500);
                     } else {
                         // Better error messages handling the proxy drop/broken pipe scenario
                         let errTxt = result.error || 'Unknown error';
-                        if (errTxt.includes('Broken pipe') || errTxt.includes('Connection') || errTxt.includes('Quota')) {
+                        if (errTxt.includes('API Rate Limit Exceeded')) {
+                            errTxt = "Google Gemini Free Tier Limit Reached (20 requests per day limit exceeded). Try again tomorrow, or use a smaller PDF to conserve requests.";
+                        } else if (errTxt.includes('Broken pipe') || errTxt.includes('Connection') || errTxt.includes('Quota')) {
                             errTxt += " - Re-upload with a smaller PDF or wait a moment for the AI rate limit to recover.";
                         }
                         errorMsg.textContent = `Upload failed: ${errTxt}`;
@@ -363,6 +384,7 @@
                         resetBtn();
                     }
                 } catch (err) {
+                    clearInterval(pollInterval);
                     errorMsg.textContent = `Error: ${err.message}. (Server connection lost or timeout)`;
                     errorMsg.classList.remove('hidden');
                     resetBtn();

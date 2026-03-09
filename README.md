@@ -8,13 +8,17 @@ ExamPreparator is an intelligent assistant designed to streamline exam preparati
 
 ❓ Question Extraction: Identifies and groups frequently asked or important questions using SBERT embeddings.
 
-🧠 RAG-Based Answering: Combines retrieval-augmented generation (via FAISS) with Gemini 1.5 Pro or local LLaMA 3 models.
+⚡ Batched AI Output: Aggregates questions into a minimal number of payloads to completely safeguard against API Rate Limits.
+
+📏 Dynamic Answer Constraints: Strictly formats generated answers based on mark values (1-mark = 1 word, 3-marks = short paragraph, 7-marks = detailed essay).
+
+🧠 RAG-Based Answering: Combines retrieval-augmented generation (via FAISS) with Gemini 1.5 Pro to ground answers in your uploaded notes.
 
 📘 KTU 2019 Scheme Support: Generates fallback answers based on curriculum guidelines when material is insufficient.
 
-📊 Progress Indicators: Shows real-time processing status for each phase.
+📊 Progress Indicators: Shows real-time processing status and quota-warnings directly in the web UI.
 
-📁 Organized Output: Saves results to structured text files for later use.
+📁 Organized Output: Saves results to beautifully formatted JSON text files for later use.
 
 ⚙️ Installation
 Prerequisites

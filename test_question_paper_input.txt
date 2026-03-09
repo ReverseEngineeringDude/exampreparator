@@ -1,0 +1,28 @@
+First Series Examination
+Course: Internet of Things (IoT)
+Maximum Marks: 46 (Suggested)
+Time: 2 Hours
+PART A: Very Short Answer Questions (1 Mark Each)
+Answer all questions. Each question carries 1 mark.
+1. Define the term Internet of Things (IoT).
+2. What specifically constitutes a "Thing" in the context of an IoT ecosystem?
+3. State one primary difference between the MQTT and CoAP protocols.
+4. What does the acronym BLE stand for in IoT networking?
+5. State one key feature that differentiates an IoT system from a standard network.
+PART B: Short Answer Questions (3 Marks Each)
+Answer all questions. Each question carries 3 marks.
+6. List and briefly explain three essential features of an IoT system.
+7. Describe three major real-world applications of IoT.
+8. Compare and contrast the CoAP and MQTT protocols (provide at least three points of
+comparison).
+PART C: Essay Type Questions (7 Marks Each)
+Answer all questions. (In a real exam, you might offer internal choices like "Answer any 3 out of
+4"). Each question carries 7 marks.
+9. Draw and explain the various layers of the IoT Stack in detail, highlighting the function of
+each layer.
+10. ] Discuss the different design Levels of IoT. Support your answer with appropriate block
+diagrams or examples for each level.
+11. Explain the MQTT protocol in detail. Describe its architecture, publish-subscribe
+mechanism, and role in IoT.
+12. Discuss the Bluetooth Low Energy (BLE) protocol. Explain its working principles and why it
+is highly suitable for IoT devices.

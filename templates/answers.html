@@ -212,47 +212,34 @@
             try {
                 const response = await fetch('/get_answers');
                 if (!response.ok) throw new Error("Failed to load answers");
-                const text = await response.text();
 
-                // Parse markdown dump into structured QA
-                // E.g. "## Question 1 [5 Marks]: What is...? \n\n Answer... \n\n---"
-                const blocks = text.split('\n\n---\n\n');
+                // Now expecting a JSON array from the backend instead of a markdown dump string
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                if (!Array.isArray(data)) {
+                    if (typeof data === 'string') {
+                        throw new Error(data);
+                    }
+                    throw new Error("Invalid answers format received from backend.");
+                }
+
                 fetchedData = [];
                 const uniqueMarks = new Set(); // Store unique marks for filtering
 
-                blocks.forEach((block, idx) => {
-                    if (!block.trim()) return;
-
-                    const lines = block.split('\n');
-                    // Match: ## Question 1 [5 Marks]: What is...?
-                    // Group 1: The Mark (e.g. "5")
-                    // Group 2: The Question Text
-                    let questionMatch = block.match(/## Question \d+\s*\[(.*?) Marks\]:\s*(.*)/);
-                    let markVal = 'Unknown';
-                    let qText = `Question ${idx + 1}`;
-
-                    if (questionMatch) {
-                        markVal = questionMatch[1].trim();
-                        qText = questionMatch[2].trim();
-                    } else {
-                        // Fallback to old format just in case
-                        let oldMatch = block.match(/## Question \d+:\s*(.*)/);
-                        if (oldMatch) qText = oldMatch[1].trim();
-                    }
-
-                    // Do not add "Unknown" to filters if it's useless, or maybe keep it. We'll map it safely.
-                    const markDisplay = markVal === "Unknown" ? "Unmarked" : `${markVal} Marks`;
+                data.forEach((item, idx) => {
+                    const markDisplay = item.mark; // e.g. "5 Marks" or "Unmarked"
                     uniqueMarks.add(markDisplay);
 
-                    // The answer is everything after the question line
-                    let aText = block.replace(/## Question \d+.*?\n/, '').trim();
-
                     fetchedData.push({
-                        id: idx,
+                        id: item.id || idx,
                         mark: markDisplay,
-                        topic: qText,
-                        answerHtml: marked.parse(aText),
-                        rawMark: markDisplay // Store raw string for filtering
+                        topic: item.topic,
+                        answerHtml: marked.parse(item.answerHtmlMarkdown),
+                        rawMark: item.rawMark // Store raw string for filtering/sorting
                     });
                 });
 
@@ -318,7 +305,7 @@
                             item.offsetHeight; /* trigger reflow */
                             item.style.animation = null;
                         } else {
-                            if (item.dataset.mark === selectedMark) {
+                            if (item.dataset.mark === selectedMark || item.dataset.rawmark === selectedMark) {
                                 item.style.display = 'block';
                                 item.style.animation = 'none';
                                 item.offsetHeight;
@@ -381,7 +368,35 @@
         function showError(msg) {
             loadingState.style.display = 'none';
             container.style.display = 'block';
-            container.innerHTML = `<div class="text-center text-red-500 py-10 bg-red-500/10 border border-red-500/20 rounded-xl">❌ Error: ${msg}</div>`;
+
+            if (msg && msg.includes("API Rate Limit Exceeded")) {
+                container.innerHTML = `
+                <div class="text-center text-orange-400 py-10 bg-orange-500/10 border border-orange-500/20 rounded-xl flex flex-col items-center justify-center gap-4">
+                    <i class="ph-bold ph-warning-circle text-4xl"></i>
+                    <div>
+                        <h3 class="text-lg font-bold">API Rate Limit Exceeded</h3>
+                        <p class="text-gray-400 text-sm mt-1">You have exhausted your free tier quota.</p>
+                        <p class="text-white font-mono mt-3 text-lg bg-[#1e1f20] px-4 py-2 rounded-lg border border-[#333537]">
+                            Try again in: <span id="quota-countdown">60</span>s
+                        </p>
+                    </div>
+                </div>`;
+
+                let timeLeft = 60;
+                const timerSpan = document.getElementById('quota-countdown');
+                const interval = setInterval(() => {
+                    timeLeft--;
+                    if (timerSpan) timerSpan.textContent = timeLeft;
+                    if (timeLeft <= 0) {
+                        clearInterval(interval);
+                        if (timerSpan) {
+                            timerSpan.parentElement.innerHTML = '<button onclick="window.location.reload()" class="text-blue-400 hover:text-blue-300 underline font-sans">Refresh & Try Again</button>';
+                        }
+                    }
+                }, 1000);
+            } else {
+                container.innerHTML = `<div class="text-center text-red-500 py-10 bg-red-500/10 border border-red-500/20 rounded-xl">❌ Error: ${msg}</div>`;
+            }
         }
 
         function renderResult(data) {
@@ -402,7 +417,8 @@
                 const card = document.createElement('div');
                 card.className = `qa-item bg-[#1e1f20] border border-[#333537] rounded-2xl overflow-hidden transition-all duration-300 hover:border-[#4a4d51]`;
                 card.style.animationDelay = `${index * 0.1}s`;
-                card.dataset.mark = item.rawMark || item.mark; // Add data attribute for filtering
+                card.dataset.mark = item.mark; // Fixed so buttons which use item.mark dataset can filter correctly
+                card.dataset.rawmark = item.rawMark;
 
                 card.innerHTML = `
                     <button class="w-full text-left p-5 sm:p-6 flex items-start justify-between gap-4 focus:outline-none group qa-toggle">
