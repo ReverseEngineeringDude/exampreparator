@@ -195,7 +195,6 @@ body {
     color: var(--secondary-color);
 }
 
-/* Study Card Styling */
 .topic-card {
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid var(--glass-border);
@@ -203,6 +202,7 @@ body {
     padding: 15px;
     margin-bottom: 15px;
     transition: transform 0.2s;
+    position: relative;
 }
 
 .topic-card:hover {
@@ -240,7 +240,6 @@ body {
     align-items: center;
     gap: 8px;
     background: #FF0000;
-    /* YouTube Red */
     color: white;
     padding: 10px 15px;
     border-radius: 8px;
@@ -249,10 +248,19 @@ body {
     font-weight: 600;
     margin-top: 10px;
     transition: filter 0.2s;
+    position: relative;
+    z-index: 10;
+    cursor: pointer;
+    pointer-events: all;
 }
 
 .video-btn:hover {
     filter: brightness(1.1);
+}
+
+/* Prevent SVG icon from swallowing clicks */
+.video-btn * {
+    pointer-events: none;
 }
 
 .loading-placeholder {
@@ -495,7 +503,8 @@ h2 {
 }
 
 /* Mermaid Diagram Styling */
-.mermaid, .language-mermaid {
+.mermaid,
+.language-mermaid {
     display: flex;
     justify-content: center;
     background: #fff;

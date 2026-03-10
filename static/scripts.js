@@ -156,42 +156,74 @@ async function loadStudyMaterial() {
             const card = document.createElement('div');
             card.className = 'topic-card';
 
-            // Diagram (if available)
-            let diagramHtml = '';
-            if (item.diagram) {
-                diagramHtml = `<div class="mermaid">${item.diagram}</div>`;
+            const titleEl = document.createElement('div');
+            titleEl.className = 'topic-title';
+            titleEl.textContent = item.topic;
+            card.appendChild(titleEl);
+
+            const summaryEl = document.createElement('div');
+            summaryEl.className = 'topic-summary';
+            summaryEl.textContent = item.summary;
+            card.appendChild(summaryEl);
+
+            // Diagram (if available) — validate before inserting
+            if (item.diagram && item.diagram !== 'null') {
+                const diagramEl = document.createElement('div');
+                diagramEl.className = 'mermaid';
+                diagramEl.setAttribute('data-diagram', item.diagram);
+                diagramEl.textContent = item.diagram;
+                card.appendChild(diagramEl);
             }
 
-            card.innerHTML = `
-                    <div class="topic-title">${item.topic}</div>
-                    <div class="topic-summary">${item.summary}</div>
-                    ${diagramHtml}
-                    <ul class="topic-points">
-                        ${item.points.map(p => `<li>${p}</li>`).join('')}
-                    </ul>
-                `;
+            const ul = document.createElement('ul');
+            ul.className = 'topic-points';
+            (item.points || []).forEach(p => {
+                const li = document.createElement('li');
+                li.textContent = p;
+                ul.appendChild(li);
+            });
+            card.appendChild(ul);
             notesList.appendChild(card);
 
-            // Video Search Link
+            // Video Search Card — built with createElement to prevent href encoding issues
             const videoCard = document.createElement('div');
             videoCard.className = 'topic-card';
-            videoCard.innerHTML = `
-                    <div class="topic-title">${item.topic}</div>
-                    <a href="https://www.youtube.com/results?search_query=${encodeURIComponent(item.topic + ' tutorial')}" 
-                       target="_blank" class="video-btn">
-                       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"></path><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"></polygon></svg>
-                       Watch on YouTube
-                    </a>
-                `;
+
+            const videoTitle = document.createElement('div');
+            videoTitle.className = 'topic-title';
+            videoTitle.textContent = item.topic;
+            videoCard.appendChild(videoTitle);
+
+            // Sanitize topic: strip markdown symbols, trim whitespace, fallback to 'general'
+            const rawTopic = (item.topic || '').replace(/[#*`_~\[\]]/g, '').trim();
+            const searchQuery = rawTopic.length > 0 ? rawTopic + ' tutorial' : 'tutorial';
+            const ytUrl = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(searchQuery);
+
+            const ytLink = document.createElement('a');
+            ytLink.href = ytUrl;
+            ytLink.target = '_blank';
+            ytLink.rel = 'noopener noreferrer';
+            ytLink.className = 'video-btn';
+            ytLink.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"></path><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"></polygon></svg> Watch on YouTube`;
+            videoCard.appendChild(ytLink);
             videosList.appendChild(videoCard);
         });
 
-        // Trigger Mermaid Render
-        setTimeout(() => {
-            mermaid.run({
-                nodes: document.querySelectorAll('.mermaid')
-            });
-        }, 100);
+        // Render Mermaid diagrams with per-diagram error handling
+        setTimeout(async () => {
+            const diagrams = document.querySelectorAll('.mermaid');
+            for (const el of diagrams) {
+                const code = el.getAttribute('data-diagram') || el.textContent.trim();
+                try {
+                    await mermaid.parse(code);   // throws if syntax is invalid
+                    el.textContent = code;        // reset text in case it was mutated
+                    await mermaid.run({ nodes: [el] });
+                } catch (parseErr) {
+                    console.warn('Mermaid syntax error, skipping diagram:', parseErr.message || parseErr);
+                    el.outerHTML = `<div class="diagram-error">⚠️ Diagram could not be rendered (syntax error).<br><small style="opacity:0.6">${String(parseErr.message || parseErr).substring(0, 120)}</small></div>`;
+                }
+            }
+        }, 150);
 
     } catch (err) {
         console.error(err);

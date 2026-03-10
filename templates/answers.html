@@ -338,8 +338,11 @@
                     let videoHtml = `
                      <div class="mt-6">
                         <a href="https://www.youtube.com/results?search_query=${encodeURIComponent(item.topic + ' tutorial')}" 
-                           target="_blank" class="inline-flex items-center gap-2 bg-[#ff0000]/10 text-[#ff4444] px-4 py-2 rounded-lg hover:bg-[#ff0000]/20 transition-colors text-sm font-semibold">
-                           <i class="ph-fill ph-youtube-logo text-lg"></i> Watch Tutorials on YouTube
+                           target="_blank"
+                           class="inline-flex items-center gap-2 bg-[#ff0000]/10 text-[#ff4444] px-4 py-2 rounded-lg hover:bg-[#ff0000]/20 transition-colors text-sm font-semibold"
+                           style="position: relative; z-index: 10; pointer-events: all;"
+                           onclick="event.stopPropagation();">
+                           <i class="ph-fill ph-youtube-logo text-lg" style="pointer-events:none;"></i> Watch Tutorials on YouTube
                         </a>
                      </div>
                      `;

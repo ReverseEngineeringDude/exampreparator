@@ -1,142 +1,122 @@
 [
     {
         "id": 1,
-        "topic": "Outline the key features of Internet of Things (IoT).",
-        "mark": "3 Marks",
-        "rawMark": "3",
-        "answerHtmlMarkdown": "IoT connects physical objects with embedded sensors and software to the internet for data exchange. A key feature is its reliance on lightweight messaging protocols like MQTT for efficient communication to and from the cloud."
+        "question_number": "1",
+        "topic": "Define the term Internet of Things (IoT).",
+        "topic_area": "",
+        "category": "short",
+        "mark": "1 Mark",
+        "rawMark": "1",
+        "answerHtmlMarkdown": "The Internet of Things (IoT) is a vast network of physical objects embedded with sensors, software, and other technologies for the purpose of connecting and exchanging data with other devices and systems over the internet."
     },
     {
         "id": 2,
-        "topic": "Explain IoT hardware, protocols and software using IoT Stack.",
-        "mark": "3 Marks",
-        "rawMark": "3",
-        "answerHtmlMarkdown": "IoT systems involve hardware like sensors collecting data via software. Key protocols such as lightweight MQTT and CoAP facilitate message exchange to/from the cloud, with MQTT using a publish-subscribe model."
+        "question_number": "2",
+        "topic": "What specifically constitutes a \"Thing\" in the context of an IoT ecosystem?",
+        "topic_area": "",
+        "category": "short",
+        "mark": "1 Mark",
+        "rawMark": "1",
+        "answerHtmlMarkdown": "A \"Thing\" in an IoT ecosystem is a uniquely identifiable physical object, sensor, or actuator equipped with embedded computing capabilities and network connectivity to collect and exchange data."
     },
     {
         "id": 3,
-        "topic": "Summarize different IoT enabling technologies.",
-        "mark": "3 Marks",
-        "rawMark": "3",
-        "answerHtmlMarkdown": "Sorry, I could not generate an answer for this question from the provided notes."
+        "question_number": "3",
+        "topic": "State one primary difference between the MQTT and CoAP protocols.",
+        "topic_area": "",
+        "category": "short",
+        "mark": "1 Mark",
+        "rawMark": "1",
+        "answerHtmlMarkdown": "MQTT follows a publish-subscribe messaging pattern with a central broker, whereas CoAP typically uses a request-response model over UDP."
     },
     {
         "id": 4,
-        "topic": "Classify IoT based on the complexity to build and operate.",
-        "mark": "3 Marks",
-        "rawMark": "3",
-        "answerHtmlMarkdown": "Sorry, I could not generate an answer for this question from the provided notes."
+        "question_number": "4",
+        "topic": "What does the acronym BLE stand for in IoT networking?",
+        "topic_area": "",
+        "category": "short",
+        "mark": "1 Mark",
+        "rawMark": "1",
+        "answerHtmlMarkdown": "BLE stands for Bluetooth Low Energy."
     },
     {
         "id": 5,
-        "topic": "Explain challenges in IoT",
-        "mark": "3 Marks",
-        "rawMark": "3",
-        "answerHtmlMarkdown": "Sorry, I could not generate an answer for this question from the provided notes."
+        "question_number": "5",
+        "topic": "State one key feature that differentiates an IoT system from a standard network.",
+        "topic_area": "",
+        "category": "short",
+        "mark": "1 Mark",
+        "rawMark": "1",
+        "answerHtmlMarkdown": "An IoT system is primarily characterized by its pervasive integration of physical objects that sense and interact with the real world, a feature not central to standard data networks."
     },
     {
         "id": 6,
-        "topic": "Outline the protocols for IoT \u2013 Messaging, Transport, addressing and Identification",
+        "question_number": "6",
+        "topic": "List and briefly explain three essential features of an IoT system.",
+        "topic_area": "",
+        "category": "short",
         "mark": "3 Marks",
         "rawMark": "3",
-        "answerHtmlMarkdown": "Sorry, I could not generate an answer for this question from the provided notes."
+        "answerHtmlMarkdown": "An Internet of Things (IoT) system fundamentally relies on three essential features. Firstly, **Sensing and Actuation** enable interaction with the physical world, where sensors collect environmental data like temperature or humidity, and actuators can perform actions such as adjusting a thermostat. Secondly, **Connectivity** facilitates the secure transmission of this collected data from edge devices to the cloud or other devices, often utilizing protocols like MQTT for efficient communication over networks. Finally, **Data Processing and Analytics** transform raw data into actionable insights, involving cloud platforms or edge computing to analyze patterns and trigger responses. For instance, in a smart home, temperature sensors collect data, which is sent via Wi-Fi (connectivity) to a cloud service that analyzes it to automatically adjust the air conditioning (actuation) based on user preferences."
     },
     {
         "id": 7,
-        "topic": "Interpret the messaging protocol MQTT and CoAP in IoT applications",
+        "question_number": "7",
+        "topic": "Describe three major real-world applications of IoT.",
+        "topic_area": "",
+        "category": "short",
         "mark": "3 Marks",
         "rawMark": "3",
-        "answerHtmlMarkdown": "Sorry, I could not generate an answer for this question from the provided notes."
+        "answerHtmlMarkdown": "The Internet of Things (IoT) integrates physical devices with the internet, enabling data collection and automated actions across diverse real-world scenarios. A significant application is **Smart Cities**, where IoT sensors and connected devices monitor urban infrastructure, traffic, and environmental conditions to optimize resource allocation, as seen in adaptive street lighting systems that adjust based on real-time occupancy. Secondly, **Industrial IoT (IIoT)** revolutionizes manufacturing and supply chains by enabling predictive maintenance for machinery, real-time asset tracking, and process automation, thereby enhancing operational efficiency and reducing downtime. Lastly, **Healthcare** utilizes IoT for remote patient monitoring, tracking vital signs through wearables, and managing hospital assets, which improves patient outcomes and streamlines clinical workflows."
     },
     {
         "id": 8,
-        "topic": "Explain the transport protocols Li-Fi and BLE involved in IoT",
+        "question_number": "8",
+        "topic": "Compare and contrast the CoAP and MQTT protocols (provide at least three points of comparison).",
+        "topic_area": "",
+        "category": "short",
         "mark": "3 Marks",
         "rawMark": "3",
-        "answerHtmlMarkdown": "Sorry, I could not generate an answer for this question from the provided notes."
+        "answerHtmlMarkdown": "CoAP (Constrained Application Protocol) and MQTT (Message Queuing Telemetry Transport) are both lightweight messaging protocols crucial for IoT, but they differ fundamentally in their communication paradigms and underlying transport mechanisms. MQTT primarily uses a publish-subscribe model, relying on a central broker to distribute messages from publishers to subscribed clients, fostering decoupled communication over TCP for guaranteed delivery. In contrast, CoAP employs a request-response model, analogous to HTTP, directly between client and server, typically over UDP for reduced overhead and suitability for highly constrained devices and lossy networks. While MQTT's TCP transport inherently offers connection-oriented reliability, CoAP's UDP transport necessitates application-layer mechanisms for optional reliability (e.g., confirmable messages), resulting in an even smaller header footprint and lower power consumption. For example, MQTT excels in telemetry for a smart home system where multiple sensors report data to a central hub, whereas CoAP is ideal for directly controlling a smart light bulb by setting its state, embodying their distinct strengths for varying IoT architectures."
     },
     {
         "id": 9,
-        "topic": "Explain IPv4 and IPv6 Addressing",
-        "mark": "3 Marks",
-        "rawMark": "3",
-        "answerHtmlMarkdown": "Sorry, I could not generate an answer for this question from the provided notes."
+        "question_number": "9",
+        "topic": "Draw and explain the various layers of the IoT Stack in detail, highlighting the function of each layer.",
+        "topic_area": "",
+        "category": "medium",
+        "mark": "7 Marks",
+        "rawMark": "7",
+        "answerHtmlMarkdown": "Answer could not be generated for this question. Please try re-uploading."
     },
     {
         "id": 10,
-        "topic": "Explain the fundamentals of cloud computing.",
-        "mark": "3 Marks",
-        "rawMark": "3",
-        "answerHtmlMarkdown": "Sorry, I could not generate an answer for this question from the provided notes."
+        "question_number": "10",
+        "topic": "] Discuss the different design Levels of IoT. Support your answer with appropriate block diagrams or examples for each level.",
+        "topic_area": "",
+        "category": "medium",
+        "mark": "7 Marks",
+        "rawMark": "7",
+        "answerHtmlMarkdown": "Answer could not be generated for this question. Please try re-uploading."
     },
     {
         "id": 11,
-        "topic": "Explain challenges of cloud with IoT",
-        "mark": "3 Marks",
-        "rawMark": "3",
-        "answerHtmlMarkdown": "Sorry, I could not generate an answer for this question from the provided notes."
+        "question_number": "11",
+        "topic": " Explain the MQTT protocol in detail. Describe its architecture, publish-subscribe mechanism, and role in IoT.",
+        "topic_area": "",
+        "category": "medium",
+        "mark": "7 Marks",
+        "rawMark": "7",
+        "answerHtmlMarkdown": "MQTT (Message Queuing Telemetry Transport) is a lightweight, publish-subscribe messaging protocol designed for constrained devices and low-bandwidth, high-latency, or unreliable networks, making it highly suitable for Internet of Things (IoT) applications. It operates over TCP/IP and aims to minimize code footprint and network bandwidth, thereby demanding minimal resources for its functioning. This efficiency stems from its simple protocol headers and stateless operation when Quality of Service (QoS) 0 is used, ensuring it can run effectively on microcontrollers and other resource-constrained edge devices.\n\nThe architecture of MQTT is centred around a central component known as the MQTT Broker, which acts as an intermediary for all message exchanges. Clients, which can be either publishers or subscribers, connect to this broker. Publishers are responsible for sending messages (data) to specific named 'topics' on the broker without needing to know which, if any, subscribers exist. Conversely, subscribers express interest in particular 'topics' to the broker and receive all messages published to those topics. This publish-subscribe mechanism decouples the senders from the receivers, providing significant advantages in terms of scalability, flexibility, and reduced complexity compared to traditional client-server models. The broker\u2019s role is crucial as it receives, filters, and dispatches messages to all interested subscribers, also handling client authentication, authorization, and maintaining persistent sessions for clients with higher QoS requirements (QoS 1 and 2).\n\nMQTT plays a pivotal role in IoT by enabling efficient and reliable communication between diverse devices, sensors, actuators, and cloud platforms. Its lightweight nature and publish-subscribe model are perfectly aligned with the requirements of IoT ecosystems, where devices often have limited processing power, memory, and battery life, and network connectivity can be intermittent. For instance, in a smart home system, a temperature sensor (publisher) can periodically publish readings to a topic like `home/livingroom/temperature`. A smart thermostat and a mobile application (subscribers) can then subscribe to this topic to receive real-time temperature updates, allowing the thermostat to adjust heating/cooling and the user to monitor conditions remotely. This facilitates the collection of telemetry data from remote sources, its transmission to the cloud for analysis, and the subsequent command and control of IoT devices, forming the backbone of many modern smart environments and industrial IoT solutions."
     },
     {
         "id": 12,
-        "topic": "Outline the selection of cloud service provider for IoT applications",
-        "mark": "3 Marks",
-        "rawMark": "3",
-        "answerHtmlMarkdown": "Sorry, I could not generate an answer for this question from the provided notes."
-    },
-    {
-        "id": 13,
-        "topic": "Explain Fog Computing",
-        "mark": "3 Marks",
-        "rawMark": "3",
-        "answerHtmlMarkdown": "Sorry, I could not generate an answer for this question from the provided notes."
-    },
-    {
-        "id": 14,
-        "topic": "Explain the Security and privacy aspects of cloud computing",
-        "mark": "3 Marks",
-        "rawMark": "3",
-        "answerHtmlMarkdown": "Sorry, I could not generate an answer for this question from the provided notes."
-    },
-    {
-        "id": 15,
-        "topic": "Illustrate the working of sensors and actuators",
-        "mark": "3 Marks",
-        "rawMark": "3",
-        "answerHtmlMarkdown": "Sorry, I could not generate an answer for this question from the provided notes."
-    },
-    {
-        "id": 16,
-        "topic": "Outline the features of  embedded computing boards - Arduino/Node MCU & Raspberry PI",
-        "mark": "3 Marks",
-        "rawMark": "3",
-        "answerHtmlMarkdown": "Sorry, I could not generate an answer for this question from the provided notes."
-    },
-    {
-        "id": 17,
-        "topic": "Illustrate the interfacing of basic sensors with embedded computing board - Arduino/Node MCU/ESP32",
-        "mark": "3 Marks",
-        "rawMark": "3",
-        "answerHtmlMarkdown": "Sorry, I could not generate an answer for this question from the provided notes."
-    },
-    {
-        "id": 18,
-        "topic": "Recall the programming constructs in Python",
-        "mark": "1 Mark",
-        "rawMark": "1",
-        "answerHtmlMarkdown": "Sorry, I could not generate an answer for this question from the provided notes."
-    },
-    {
-        "id": 19,
-        "topic": "Illustrate the interfacing of basic sensors with embedded computing board -  Raspberry PI",
-        "mark": "3 Marks",
-        "rawMark": "3",
-        "answerHtmlMarkdown": "Sorry, I could not generate an answer for this question from the provided notes."
-    },
-    {
-        "id": 20,
-        "topic": "Summarize the applications building with IoT - Smart Perishable tracking/Smart transportation, Smart Healthcare, Smart Lavatory maintenance, Smart water through IoT, Smart warehouse monitoring, Smart Retail, Smart Driver assistance system",
-        "mark": "3 Marks",
-        "rawMark": "3",
-        "answerHtmlMarkdown": "Sorry, I could not generate an answer for this question from the provided notes."
+        "question_number": "12",
+        "topic": " Discuss the Bluetooth Low Energy (BLE) protocol. Explain its working principles and why it is highly suitable for IoT devices.",
+        "topic_area": "",
+        "category": "medium",
+        "mark": "7 Marks",
+        "rawMark": "7",
+        "answerHtmlMarkdown": "Bluetooth Low Energy (BLE) is a wireless personal area network technology designed by the Bluetooth Special Interest Group (SIG) specifically for applications requiring minimal power consumption and cost. Positioned as a transport protocol, BLE facilitates short-range, intermittent data transmission between devices, making it a critical component for numerous modern embedded systems. It distinguishes itself from Bluetooth Classic by prioritizing energy efficiency, longer battery life, and optimized performance for small data packets, thus enabling a wide array of battery-powered applications.\n\nThe working principles of BLE are primarily governed by two architectural components: the Generic Access Profile (GAP) and the Generic Attribute Profile (GATT). GAP defines the roles devices can assume (e.g., Central, Peripheral, Broadcaster, Observer) and the procedures for device discovery and connection establishment, typically through advertising (broadcasting data) and scanning (listening for advertisements). Once a connection is established, GATT dictates how data is organized and exchanged, using services (collections of data) and characteristics (individual data points within a service). BLE conserves power by keeping devices in a deep sleep state for the majority of the time, waking only for brief intervals to perform essential functions like advertising, scanning, or transmitting small data packets, and employs adaptive frequency hopping for robust communication.\n\nBLE's inherent design makes it exceptionally well-suited for Internet of Things (IoT) devices, which are frequently battery-powered, resource-constrained, and necessitate intermittent, small data transfers. Its ultra-low power consumption allows IoT sensors, wearables, and smart home devices to operate for months or even years on compact batteries, significantly reducing operational overhead. The low cost of BLE chipsets further enables the widespread and economical deployment of IoT solutions. Coupled with native support across most smartphones and operating systems, BLE provides a ubiquitous and convenient short-range communication backbone, allowing IoT endpoints to seamlessly connect to gateways, larger networks, or user interfaces, perfectly aligning with the demand for lightweight and efficient protocols in IoT infrastructure."
     }
 ]

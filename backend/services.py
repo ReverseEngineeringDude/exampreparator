@@ -3,18 +3,15 @@ import time
 import json
 import re
 import shutil
-import torch
 import faiss
 import numpy as np
 import google.generativeai as genai
-from flask import current_app
 from PyPDF2 import PdfReader
-from transformers import AutoTokenizer, AutoModel
 from sentence_transformers import SentenceTransformer, util
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.enums import TA_JUSTIFY, TA_LEFT
+from reportlab.lib.enums import TA_JUSTIFY
 
 PROGRESS_FILE = os.path.join(os.path.dirname(__file__), "progress.json")
 
@@ -34,20 +31,35 @@ MODEL_NAME_SBERT = "sentence-transformers/all-MiniLM-L6-v2"
 MODEL_NAME_GEMINI = "models/gemini-2.5-flash"
 
 _sbert_model = None
-_tokenizer = None
-_auto_model = None
+_api_keys = []
+_current_key_idx = 0
 _gemini_configured = False
 
 def init_models():
-    global _sbert_model, _tokenizer, _auto_model, _gemini_configured
+    global _sbert_model, _api_keys, _current_key_idx, _gemini_configured
     if not _gemini_configured:
         if os.path.exists(API_KEY_PATH):
             with open(API_KEY_PATH) as f:
-                api_key = f.read().strip()
-            genai.configure(api_key=api_key)
-            _gemini_configured = True
+                # Support multiple keys: one per line, ignore blank lines
+                _api_keys = [line.strip() for line in f.readlines() if line.strip()]
+            if _api_keys:
+                genai.configure(api_key=_api_keys[0])
+                _current_key_idx = 0
+                _gemini_configured = True
+                print(f"[KeyRotator] Loaded {len(_api_keys)} API key(s).")
     if _sbert_model is None:
         _sbert_model = SentenceTransformer(MODEL_NAME_SBERT)
+
+def rotate_api_key():
+    """Switch to the next available API key and reconfigure genai. Returns True if rotated."""
+    global _current_key_idx
+    if len(_api_keys) <= 1:
+        return False
+    _current_key_idx = (_current_key_idx + 1) % len(_api_keys)
+    new_key = _api_keys[_current_key_idx]
+    genai.configure(api_key=new_key)
+    print(f"[KeyRotator] Rotated to key index {_current_key_idx}.")
+    return True
 
 # ==========================================
 # EXTRACTION UTILS
@@ -81,30 +93,34 @@ def generate_answers(grouped_questions_text, notes_folder):
     set_progress(20, "Analyzing question formats and marks...")
 
     extract_template = '''
-    ACT AS AN EXAM PAPER PARSER. 
-    Analyze the text provided below. Your goal is to extract every unique question and its specific mark weightage.
+You are an exam paper parser. Extract all questions from the question paper below.
 
-    STRICT RULES FOR MARKS:
-    1. Look for SECTION HEADERS first. (e.g., "PART A - Answer all questions. Each carries 3 marks").
-    2. If a question is inside that section, assign it the section's mark (3).
-    3. If a question has marks in brackets like [7] or (1) at the end, use that.
-    4. If the mark is not found, GUESS based on the question complexity:
-       - Simple definitions ("What is...") = 1 mark.
-       - Explanations/Comparisons ("Explain...", "Differentiate...") = 3 marks.
-       - Detailed Architecture/Derivations ("Design...", "Derive...", "Detailed note on...") = 7 marks.
-    
-    5. ONLY output these three mark values: 1, 3, or 7. Round any other value to the nearest of these three.
+RULES:
+1. Extract the EXACT question text — do not rephrase or summarize.
+2. Match each question to its correct marks. Look for patterns: "(3 marks)", "[7]", "3M", "CO1 - 1 Mark", section headers like "PART A - 3 marks each", etc.
+3. Number the questions exactly as they appear in the paper.
+4. Each question must be independent — do not mix up question numbers.
 
-    OUTPUT FORMAT:
-    Return ONLY a valid JSON array. No markdown, no "here is the json".
-    [
-      {{"question": "The text of the question", "mark": 1}},
-      {{"question": "The text of the question", "mark": 3}},
-      {{"question": "The text of the question", "mark": 7}}
-    ]
+Return ONLY a valid JSON array. No markdown, no explanation, no extra text.
 
-    TEXT TO PARSE:
-    {}
+Format:
+[
+  {{
+    "id": 1,
+    "question_number": "1",
+    "question_text": "Exact question text here",
+    "marks": 1,
+    "category": "short"
+  }}
+]
+
+Category rules:
+- "short" = 1 to 3 marks
+- "medium" = 4 to 7 marks
+- "long" = 8 or more marks
+
+QUESTION PAPER:
+{}
     '''
     
     raw_json_str = safe_generate(extract_template, grouped_questions_text)
@@ -139,76 +155,54 @@ def generate_answers(grouped_questions_text, notes_folder):
     else:
         index = None
 
-    # 3. GENERATION BATCHING
-    final_output = []
-    
-    # Group questions by mark
-    grouped_questions = {
-        1: {"label": "1 Mark", "instr": "Answer in exactly 1-2 concise sentences. Be very brief.", "items": []},
-        3: {"label": "3 Marks", "instr": "Answer in a short paragraph (3-5 sentences). Focus on the core definition and one key point.", "items": []},
-        7: {"label": "7 Marks", "instr": "Provide a comprehensive long-form answer. Use bold headings, bullet points, and include a Mermaid.js diagram if the topic allows for a flowchart or architecture.", "items": []}
-    }
-
-    # Assign IDs and retrieve context
+    # 3. BUILD valid_qs WITH FULL CONTEXT AND INSTRUCTIONS
     valid_qs = []
-    for q_item in questions_data:
-        question = q_item.get('question', '')
-        mark_val = q_item.get('mark', 0)
-        
-        if not question or len(question.strip()) < 5 or mark_val == 0 or str(mark_val).lower() in ["unmarked", "null", "none"]:
-            continue
-            
-        m_val = 1 if mark_val <= 1 else (3 if mark_val <= 3 else 7)
-        
-        # RAG Retrieval
-        context = ""
-        if index is not None and valid_notes:
-            q_emb = _sbert_model.encode([question])
-            _, indices = index.search(q_emb, k=2)
-            context = "\n\n".join([valid_notes[idx] for idx in indices[0] if idx < len(valid_notes)])
-            
-        if len(context) < 50:
-            context = "Notes are insufficient. Use general academic knowledge."
-            
-        q_id = len(valid_qs) + 1
-        q_obj = {
-            "id": q_id,
-            "topic": question,
-            "mark_val": m_val,
-            "context": context
-        }
-        valid_qs.append(q_obj)
-        grouped_questions[m_val]["items"].append(q_obj)
 
-    # 3. CONSOLIDATED SINGLE BATCH GENERATION
-    valid_qs = []
-    
     # Pre-map all questions with IDs, contexts, and instructions
     for q_item in questions_data:
-        question = q_item.get('question', '')
-        mark_val = q_item.get('mark', 0)
+        question = q_item.get('question_text', q_item.get('question', ''))
+        mark_val = q_item.get('marks', q_item.get('mark', 0))
         
         if not question or len(question.strip()) < 5 or mark_val == 0 or str(mark_val).lower() in ["unmarked", "null", "none"]:
             continue
             
         try:
             mark_val = int(mark_val)
-        except ValueError:
+        except (ValueError, TypeError):
             mark_val = 1
             
-        # Determine instruction based on mark
-        if mark_val <= 1:
+        # Fine-grained per-mark instruction (matches exam answer rubric)
+        m_label = f"{mark_val} Mark{'s' if mark_val != 1 else ''}"
+        if mark_val == 1:
             m_val = 1
-            instr = "Answer in exactly ONE WORD. Provide only the most critical defining term or acronym. Be absolutely minimal."
-            m_label = "1 Mark"
-        elif mark_val <= 3:
+            instr = "Exactly 1 sentence. One definition or one fact only. No elaboration."
+        elif mark_val == 2:
+            m_val = 1
+            instr = "Exactly 2-3 sentences. One concept with a brief explanation."
+        elif mark_val == 3:
             m_val = 3
-            instr = "Answer in exactly 1 to 3 short lines. Focus strictly on the core definition and one key point. Do not exceed 3 lines."
-            m_label = "3 Marks"
+            instr = "One paragraph of 4-6 sentences. Define + explain + one example."
+        elif mark_val == 4:
+            m_val = 3
+            instr = "One paragraph of 6-8 sentences. Cover main points with explanation."
+        elif mark_val == 5:
+            m_val = 3
+            instr = "Two paragraphs. Definition, explanation, examples, and significance."
+        elif mark_val == 6:
+            m_val = 7
+            instr = "Two solid paragraphs. Concept + working + real-world use."
+        elif mark_val == 7:
+            m_val = 7
+            instr = "Three paragraphs. Intro/definition, detailed explanation with subtopics, example/application."
+        elif mark_val == 8:
+            m_val = 7
+            instr = "Three to four paragraphs. Add comparison or advantages/disadvantages."
+        elif mark_val <= 10:
+            m_val = 7
+            instr = "Four to five paragraphs with subheadings. Full coverage of the topic."
         else:
             m_val = 7
-            instr = "Provide a comprehensive, long-form answer. Use bold headings, bullet points, and include a Mermaid.js diagram if the topic allows for a flowchart or architecture."
-            m_label = "7 Marks"
+            instr = "Essay format. Introduction, multiple headed sections, examples, conclusion."
             
         # RAG Retrieval
         context = ""
@@ -224,7 +218,11 @@ def generate_answers(grouped_questions_text, notes_folder):
         q_obj = {
             "id": q_id,
             "topic": question,
+            "topic_area": q_item.get("topic", ""),
+            "category": q_item.get("category", ""),
+            "question_number": q_item.get("question_number", ""),
             "mark_val": m_val,
+            "raw_marks": mark_val,
             "mark_label": m_label,
             "instruction": instr,
             "context": context
@@ -242,73 +240,82 @@ def generate_answers(grouped_questions_text, notes_folder):
 
     final_output = []
     if valid_qs:
-        for batch_name, current_qs in batches:
-            set_progress(50, f"Generating {batch_name}...")
-            
-            batch_prompt = f'''
-            YOU ARE AN EXAM ANSWER GENERATOR.
-            
-            Below is a JSON array containing {len(current_qs)} questions.
-            Each question has its own specific 'context' (reference notes) and 'instruction' (how long/detailed the answer should be).
-            
-            You MUST generate an answer for EVERY SINGLE QUESTION in the array, explicitly following its individual 'instruction'. Do not skip any.
-            
-            To ensure you don't mix up questions, YOUR OUTPUT FORMAT MUST BE EXCLUSIVELY A valid JSON array of exactly {len(current_qs)} objects.
-            For each object, you MUST restate the "id", the "topic", and the "instruction", and then provide your "answerHtmlMarkdown", exactly like this:
-            [
-                {{{{
-                    "id": 1, 
-                    "topic": "Define IoT",
-                    "instruction": "Answer in exactly ONE WORD.",
-                    "answerHtmlMarkdown": "Network"
-                }}}},
-                {{{{
-                    "id": 2, 
-                    "topic": "...",
-                    "instruction": "...",
-                    "answerHtmlMarkdown": "..."
-                }}}}
-            ]
-            
-            DO NOT wrap the JSON in markdown codeblocks like ```json . Just output the raw array starting with [ and ending with ].
-            YOU MUST RETURN EXACTLY {len(current_qs)} JSON OBJECTS IN THE ARRAY.
+        def generate_single_answer(q):
+            """Generate answer for ONE question at a time — prevents answer mismatch."""
+            marks = q["raw_marks"]
+            question_text = q["topic"]
+            instruction = q["instruction"]
+            context = q["context"]
 
-            QUESTIONS TO ANSWER:
-            {{}}
-            '''
-            
-            payload = json.dumps([{"id": q["id"], "topic": q["topic"], "instruction": q["instruction"], "context": q["context"]} for q in current_qs], ensure_ascii=False)
-            
-            answer_raw = safe_generate(batch_prompt, payload)
-            if answer_raw == "API_QUOTA_ERROR":
-                return [], "API Rate Limit Exceeded. Please wait before generating again."
-                
-            # Parse returned JSON array
-            try:
-                json_match = re.search(r'\[.*\]', answer_raw, re.DOTALL)
-                if json_match:
-                    batch_answers = json.loads(json_match.group())
-                    for ans_obj in batch_answers:
-                        for q in valid_qs:
-                            if str(q["id"]) == str(ans_obj.get("id", "")):
-                                q["answerHtmlMarkdown"] = ans_obj.get("answerHtmlMarkdown", "Sorry, could not generate an answer.")
-            except Exception as e:
-                print(f"Batch JSON Parse Error for {batch_name}: {e}")
-                
-            import time
-            time.sleep(3) # Tiny sleep safely between the distinct batches
+            prompt = f"""You are an expert exam answer writer for university-level examinations.
+
+Answer ONLY this ONE question below. Do not answer anything else.
+
+QUESTION: {question_text}
+MARKS: {marks}
+SUBJECT AREA: {q.get("topic_area", "General")}
+
+STRICT LENGTH RULE FOR {marks} MARK(S):
+{instruction}
+
+REFERENCE CONTEXT (use if helpful, ignore if irrelevant):
+{context[:2000]}
+
+ABSOLUTE RULES:
+1. Always write a complete answer. NEVER say "sorry", "I cannot", or "I don't know".
+2. Write from your academic knowledge if context is insufficient.
+3. DO NOT exceed or fall short of the required length for {marks} mark(s).
+4. Match the answer format to the question — "compare" means a comparison, "list" means bullet points, "explain" means paragraphs, "define" means a definition.
+5. Use clear academic English.
+6. Output ONLY the answer text. No JSON. No preamble. Just the answer."""
+
+            model = genai.GenerativeModel(MODEL_NAME_GEMINI)
+            keys_tried = 0
+            for attempt in range(5):
+                try:
+                    response = model.generate_content(prompt)
+                    if response and hasattr(response, 'text') and response.text.strip():
+                        return response.text.strip()
+                except Exception as e:
+                    err = str(e)
+                    print(f"Single answer error (attempt {attempt+1}): {err}")
+                    if "429" in err or "quota" in err.lower():
+                        rotated = rotate_api_key()
+                        keys_tried += 1
+                        if rotated:
+                            # Switched to a fresh key — short pause then retry
+                            time.sleep(2)
+                        else:
+                            # Only one key or all exhausted — exponential backoff
+                            wait = min(15 * (2 ** keys_tried), 120)
+                            print(f"All keys rate-limited — waiting {wait}s...")
+                            time.sleep(wait)
+                    else:
+                        time.sleep(3)
+            return ""
+
+        total_qs = len(valid_qs)
+        for idx, q in enumerate(valid_qs):
+            pct = 50 + int(40 * (idx / total_qs))
+            set_progress(pct, f"Generating answer {idx+1}/{total_qs} ({q['mark_label']})...")
+            answer = generate_single_answer(q)
+            q["answerHtmlMarkdown"] = answer
+            time.sleep(2.5)  # shorter delay now that key rotation handles quota bursts
             
     # Final assembly
     for q in valid_qs:
         ans = q.get("answerHtmlMarkdown", "")
-        if not ans or ans.strip().lower() in ["null", "none", ""]:
-            ans = "Sorry, I could not generate an answer for this question from the provided notes."
+        if not ans or ans.strip().lower() in ["null", "none", ""] or len(ans.strip()) < 20:
+            ans = "Answer could not be generated for this question. Please try re-uploading."
             
         final_output.append({
             "id": q["id"],
+            "question_number": q.get("question_number", ""),
             "topic": q["topic"],
-            "mark": grouped_questions[q["mark_val"]]["label"],
-            "rawMark": str(q["mark_val"]),
+            "topic_area": q.get("topic_area", ""),
+            "category": q.get("category", ""),
+            "mark": q["mark_label"],
+            "rawMark": str(q.get("raw_marks", q["mark_val"])),
             "answerHtmlMarkdown": ans
         })
         
@@ -317,22 +324,33 @@ def generate_answers(grouped_questions_text, notes_folder):
 
 def safe_generate(prompt_template, content):
     init_models()
-    model = genai.GenerativeModel(MODEL_NAME_GEMINI)
     # Truncate content if too large for prompt
-    truncated_content = content[:15000] 
+    truncated_content = content[:15000]
     prompt = prompt_template.format(truncated_content)
-    
-    for attempt in range(3):
+
+    keys_tried = 0
+    for attempt in range(5):
         try:
+            model = genai.GenerativeModel(MODEL_NAME_GEMINI)
             response = model.generate_content(prompt)
             if response and hasattr(response, 'text'):
                 return response.text.strip()
         except Exception as e:
             error_msg = str(e)
-            print(f"Error calling Gemini API: {error_msg}")
-            if "429" in error_msg and "quota" in error_msg.lower():
-                return "API_QUOTA_ERROR"
-            time.sleep(2)
+            print(f"safe_generate error (attempt {attempt+1}): {error_msg}")
+            if "429" in error_msg or "quota" in error_msg.lower():
+                rotated = rotate_api_key()
+                keys_tried += 1
+                if rotated:
+                    time.sleep(2)  # brief pause after key switch
+                else:
+                    wait = min(15 * (2 ** keys_tried), 120)
+                    print(f"All keys rate-limited — waiting {wait}s...")
+                    time.sleep(wait)
+                    if keys_tried >= len(_api_keys) * 2:
+                        return "API_QUOTA_ERROR"
+            else:
+                time.sleep(3)
     return ""
 
 def generate_pdf_from_text(text_content, output_pdf_path):
@@ -489,13 +507,18 @@ def generate_study_from_questions(questions_folder, notes_folder=None):
             "topic": "Topic Name (from Question Paper)",
             "summary": "Simple explanation/notes about this topic.",
             "points": ["Key concept 1", "Key concept 2", "Key concept 3"],
-            "diagram": "Mermaid.js code for a flowchart/diagram if applicable, else null"
+            "diagram": "Mermaid.js flowchart code OR null"
         }},
         ...
     ]
     
-    If a topic can be better explained with a flowchart or diagram, provide the Mermaid.js code in the "diagram" field.
-    Example diagram code: "graph TD; A-->B; B-->C;"
+    DIAGRAM RULES (very important):
+    - Only include a diagram if it genuinely helps understand the topic (architecture, process flow, lifecycle).
+    - Use ONLY valid Mermaid.js flowchart syntax. Always start with "graph TD" or "graph LR".
+    - Node labels must NOT contain quotes, parentheses, or special characters. Use simple words only.
+    - Use --> for arrows. Example of a VALID diagram: "graph TD; A[Start] --> B[Process] --> C[End]"
+    - If you are unsure the syntax is correct, set "diagram" to null.
+    - NEVER use subgraph, classDef, or style blocks — keep it simple.
     
     {} 
     '''
